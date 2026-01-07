@@ -1,0 +1,28 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
+class FitnessUser extends Model
+{
+    use HasFactory;
+
+    // الأعمدة اللي نسمح بالتعبئة الجماعية
+    protected $fillable = [
+        'user_id',
+        'age',
+        'weight',
+        'height',
+        'target_weight',
+        'goal_type',
+        'health_condition_type',
+    ];
+
+    // العلاقة: FitnessUser تابع لمستخدم واحد
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+}
