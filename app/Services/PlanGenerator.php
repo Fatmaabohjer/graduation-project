@@ -6,6 +6,8 @@ use App\Models\Plan;
 use App\Models\Meal;
 use App\Models\Workout;
 use App\Models\User;
+use App\Models\MealTemplate;
+use App\Models\WorkoutTemplate;
 use Illuminate\Support\Carbon;
 use RuntimeException;
 
@@ -16,24 +18,20 @@ class PlanGenerator
         $profile = $user->fitnessProfile;
 
         if (!$profile) {
-            // خليه واضح عشان نقدر نمسكه في الكونترولر ونرجّع redirect محترم
             throw new RuntimeException('HEALTH_PROFILE_MISSING');
         }
 
-        // مثال بسيط لحساب calories_target (ممكن تطوريه بعدين)
+        // بسيط: calories_target
         $caloriesTarget = (int) ($profile->calories_target ?? 2000);
 
         $start = Carbon::now()->startOfDay();
         $end   = (clone $start)->addDays(6);
 
-        // لو تبّي كل مرة plan واحد فقط: امسح آخر بلان قبل ما تنشئ جديد (اختياري)
-        // Plan::where('user_id', $user->id)->delete();
-
         $plan = Plan::create([
             'user_id'         => $user->id,
             'calories_target' => $caloriesTarget,
             'bmi'             => $profile->bmi ?? null,
-            'goal_type'       => $profile->goal_type ?? 'general',
+            'goal_type'       => $profile->goal_type ?? ($profile->goal ?? 'general'), // دعم الاسمين
             'start_date'      => $start->toDateString(),
             'end_date'        => $end->toDateString(),
         ]);
@@ -43,12 +41,50 @@ class PlanGenerator
 
     public function generateMealsFor(Plan $plan): void
     {
-        // امسح القديم لنفس البلان (باش مايصيرش تكرار)
+        // نمسح القديم لنفس البلان
         Meal::where('plan_id', $plan->id)->delete();
 
-        $days = range(1, 7);
+        $goal = $plan->goal_type ?? 'general';
 
-        // ديمو meals (طوريها بعدين)
+        // ✅ نحاول نجيب templates من DB
+        $templates = MealTemplate::query()
+            ->where('is_active', true)
+            ->where(function ($q) use ($goal) {
+                $q->whereNull('goal_type')
+                  ->orWhere('goal_type', $goal)
+                  ->orWhere('goal_type', 'general');
+            })
+            ->get();
+
+        // ✅ لو في templates: استخدمهم
+        if ($templates->isNotEmpty()) {
+            $byType = $templates->groupBy(fn ($t) => strtolower($t->meal_type));
+
+            foreach (range(1, 7) as $day) {
+                foreach (['breakfast', 'lunch', 'dinner'] as $type) {
+                    $pool = $byType->get($type, collect());
+
+                    // لو نوع ناقص، نعدّي (وإلا تقدري تthrow حسب رغبتك)
+                    if ($pool->isEmpty()) {
+                        continue;
+                    }
+
+                    $picked = $pool->random();
+
+                    Meal::create([
+                        'plan_id'   => $plan->id,
+                        'day'       => $day,
+                        'meal_type' => ucfirst($type),
+                        'name'      => $picked->name,
+                        'calories'  => (int) $picked->calories,
+                    ]);
+                }
+            }
+
+            return; // ✅ مهم: ما نكملوش للديمو
+        }
+
+        // ✅ Fallback للديمو (لو مافيش templates)
         $demo = [
             'breakfast' => [
                 ['Oatmeal + Banana', 400],
@@ -67,9 +103,7 @@ class PlanGenerator
             ],
         ];
 
-        foreach ($days as $day) {
-            $target = (int) round($plan->calories_target / 1.3); // just demo
-
+        foreach (range(1, 7) as $day) {
             $b = $demo['breakfast'][($day - 1) % count($demo['breakfast'])];
             $l = $demo['lunch'][($day - 1) % count($demo['lunch'])];
             $d = $demo['dinner'][($day - 1) % count($demo['dinner'])];
@@ -96,13 +130,45 @@ class PlanGenerator
     {
         Workout::where('plan_id', $plan->id)->delete();
 
+        $goal = $plan->goal_type ?? 'general';
+
+        // ✅ نحاول نجيب templates من DB
+        $templates = WorkoutTemplate::query()
+            ->where('is_active', true)
+            ->where(function ($q) use ($goal) {
+                $q->whereNull('goal_type')
+                  ->orWhere('goal_type', $goal)
+                  ->orWhere('goal_type', 'general');
+            })
+            ->get();
+
+        // ✅ لو في templates: اختار منها
+        if ($templates->isNotEmpty()) {
+            foreach (range(1, 7) as $day) {
+                // تمرين واحد لكل يوم (تقدري تخليه أكثر)
+                $picked = $templates->random();
+
+                Workout::create([
+                    'plan_id'          => $plan->id,
+                    'day'              => $day,
+                    'name'             => $picked->name,
+                    'duration_minutes' => $picked->duration_minutes,
+                    'level'            => $picked->level,
+                    'video_url'        => $picked->video_url,
+                ]);
+            }
+
+            return;
+        }
+
+        // ✅ Fallback للديمو (لو مافيش templates)
         $workouts = [
             1 => [
-                ['Plank (Core)', 8,  'Beginner',     'https://www.youtube.com/watch?v=pSHjTRCQxIw'],
+                ['Plank (Core)', 8,  'Beginner', 'https://www.youtube.com/watch?v=pSHjTRCQxIw'],
             ],
             2 => [
                 ['Low Impact Cardio', 15, 'Beginner', 'https://www.youtube.com/watch?v=ml6cT4AZdqI'],
-                ['Full Body Strength', 30,'Advanced', 'https://www.youtube.com/watch?v=U0bhE67HuDY'],
+                ['Full Body Strength', 30, 'Advanced', 'https://www.youtube.com/watch?v=U0bhE67HuDY'],
             ],
             3 => [
                 ['Core Workout', 15, 'Intermediate', 'https://www.youtube.com/watch?v=AnYl6Nk9GOA'],

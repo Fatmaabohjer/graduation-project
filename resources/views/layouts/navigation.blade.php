@@ -12,14 +12,43 @@
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                    {{-- User links --}}
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
-                    <x-nav-link :href="route('profile.health.edit')" 
-                        :active="request()->routeIs('profile.health.*')">
+
+                    <x-nav-link :href="route('profile.health.edit')" :active="request()->routeIs('profile.health.*')">
                         Health Profile
                     </x-nav-link>
 
+                    <x-nav-link :href="route('plan.show')" :active="request()->routeIs('plan.*')">
+                        My Plan
+                    </x-nav-link>
+
+                    {{-- Admin links (only for admin) --}}
+                    @if(auth()->check() && auth()->user()->is_admin)
+                        <div class="border-l border-gray-200 dark:border-gray-700 mx-2"></div>
+
+                        <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
+                            Admin Dashboard
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
+                            Users
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('admin.logs.index')" :active="request()->routeIs('admin.logs.*')">
+                            Logs
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('admin.meals.index')" :active="request()->routeIs('admin.meals.*')">
+                            Meal Templates
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('admin.workouts.index')" :active="request()->routeIs('admin.workouts.*')">
+                            Workout Templates
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 
@@ -72,9 +101,43 @@
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
+            {{-- User links --}}
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('profile.health.edit')" :active="request()->routeIs('profile.health.*')">
+                Health Profile
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('plan.show')" :active="request()->routeIs('plan.*')">
+                My Plan
+            </x-responsive-nav-link>
+
+            {{-- Admin links (only for admin) --}}
+            @if(auth()->check() && auth()->user()->is_admin)
+                <div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+
+                <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
+                    Admin Dashboard
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
+                    Users
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('admin.logs.index')" :active="request()->routeIs('admin.logs.*')">
+                    Logs
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('admin.meals.index')" :active="request()->routeIs('admin.meals.*')">
+                    Meal Templates
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('admin.workouts.index')" :active="request()->routeIs('admin.workouts.*')">
+                    Workout Templates
+                </x-responsive-nav-link>
+            @endif
         </div>
 
         <!-- Responsive Settings Options -->
