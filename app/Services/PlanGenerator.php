@@ -21,106 +21,124 @@ class PlanGenerator
             throw new RuntimeException('HEALTH_PROFILE_MISSING');
         }
 
-        // بسيط: calories_target
         $caloriesTarget = (int) ($profile->calories_target ?? 2000);
 
         $start = Carbon::now()->startOfDay();
         $end   = (clone $start)->addDays(6);
 
-        $plan = Plan::create([
+        return Plan::create([
             'user_id'         => $user->id,
             'calories_target' => $caloriesTarget,
             'bmi'             => $profile->bmi ?? null,
-            'goal_type'       => $profile->goal_type ?? ($profile->goal ?? 'general'), // دعم الاسمين
+            'goal_type'       => $profile->goal_type ?? ($profile->goal ?? 'general'),
             'start_date'      => $start->toDateString(),
             'end_date'        => $end->toDateString(),
         ]);
-
-        return $plan;
     }
 
     public function generateMealsFor(Plan $plan): void
     {
-        // نمسح القديم لنفس البلان
         Meal::where('plan_id', $plan->id)->delete();
+
+        $user = $plan->user;
+        $profile = $user?->fitnessProfile;
 
         $goal = $plan->goal_type ?? 'general';
 
-        // ✅ نحاول نجيب templates من DB
-        $templates = MealTemplate::query()
+        $dietary = $profile?->dietary_condition;
+        $dietary = is_string($dietary) ? strtolower(trim($dietary)) : null;
+        if ($dietary === '' || $dietary === 'none') $dietary = null;
+
+        // base: goal + active
+        $base = MealTemplate::query()
             ->where('is_active', true)
             ->where(function ($q) use ($goal) {
                 $q->whereNull('goal_type')
                   ->orWhere('goal_type', $goal)
                   ->orWhere('goal_type', 'general');
-            })
-            ->get();
+            });
 
-        // ✅ لو في templates: استخدمهم
-        if ($templates->isNotEmpty()) {
-            $byType = $templates->groupBy(fn ($t) => strtolower($t->meal_type));
+        $mealTypes = ['breakfast', 'lunch', 'dinner'];
+
+        // ✅ لكل meal_type بروحه: specific إذا موجود، وإلا general
+        $pools = [];
+        foreach ($mealTypes as $type) {
+            $typeCap = ucfirst($type);
+
+            if ($dietary) {
+                $specific = (clone $base)
+                    ->where('meal_type', $typeCap)
+                    ->where('dietary_condition', $dietary)
+                    ->get();
+
+                if ($specific->isNotEmpty()) {
+                    $pools[$type] = $specific;
+                    continue;
+                }
+            }
+
+            $fallback = (clone $base)
+                ->where('meal_type', $typeCap)
+                ->where(function ($q) {
+                    $q->whereNull('dietary_condition')
+                      ->orWhere('dietary_condition', 'none');
+                })
+                ->get();
+
+            $pools[$type] = $fallback;
+        }
+
+        // ✅ لو كلهم فاضيين، fallback demo
+        $anyTemplates = collect($pools)->flatten(1);
+        if ($anyTemplates->isEmpty()) {
+            $demo = [
+                'breakfast' => [
+                    ['Oatmeal + Banana', 400],
+                    ['Eggs + Toast', 450],
+                    ['Yogurt + Granola', 380],
+                ],
+                'lunch' => [
+                    ['Tuna Sandwich', 520],
+                    ['Chicken Salad', 500],
+                    ['Rice + Beans', 550],
+                ],
+                'dinner' => [
+                    ['Pasta (Light)', 620],
+                    ['Soup + Bread', 500],
+                    ['Grilled Fish + Veggies', 560],
+                ],
+            ];
 
             foreach (range(1, 7) as $day) {
-                foreach (['breakfast', 'lunch', 'dinner'] as $type) {
-                    $pool = $byType->get($type, collect());
-
-                    // لو نوع ناقص، نعدّي (وإلا تقدري تthrow حسب رغبتك)
-                    if ($pool->isEmpty()) {
-                        continue;
-                    }
-
-                    $picked = $pool->random();
+                foreach ($mealTypes as $type) {
+                    $arr = $demo[$type];
+                    $picked = $arr[($day - 1) % count($arr)];
 
                     Meal::create([
                         'plan_id'   => $plan->id,
                         'day'       => $day,
                         'meal_type' => ucfirst($type),
-                        'name'      => $picked->name,
-                        'calories'  => (int) $picked->calories,
+                        'name'      => $picked[0],
+                        'calories'  => (int) $picked[1],
                     ]);
                 }
             }
-
-            return; // ✅ مهم: ما نكملوش للديمو
+            return;
         }
 
-        // ✅ Fallback للديمو (لو مافيش templates)
-        $demo = [
-            'breakfast' => [
-                ['Oatmeal + Banana', 400],
-                ['Eggs + Toast', 450],
-                ['Yogurt + Granola', 380],
-            ],
-            'lunch' => [
-                ['Tuna Sandwich', 520],
-                ['Chicken Salad', 500],
-                ['Rice + Beans', 550],
-            ],
-            'dinner' => [
-                ['Pasta (Light)', 620],
-                ['Soup + Bread', 500],
-                ['Grilled Fish + Veggies', 560],
-            ],
-        ];
-
         foreach (range(1, 7) as $day) {
-            $b = $demo['breakfast'][($day - 1) % count($demo['breakfast'])];
-            $l = $demo['lunch'][($day - 1) % count($demo['lunch'])];
-            $d = $demo['dinner'][($day - 1) % count($demo['dinner'])];
+            foreach ($mealTypes as $type) {
+                $pool = $pools[$type] ?? collect();
+                if ($pool->isEmpty()) continue;
 
-            $meals = [
-                ['Breakfast', $b[0], $b[1]],
-                ['Lunch',     $l[0], $l[1]],
-                ['Dinner',    $d[0], $d[1]],
-            ];
+                $picked = $pool->random();
 
-            foreach ($meals as [$type, $name, $cal]) {
                 Meal::create([
                     'plan_id'   => $plan->id,
                     'day'       => $day,
-                    'meal_type' => $type,
-                    'name'      => $name,
-                    'calories'  => $cal,
+                    'meal_type' => ucfirst($type),
+                    'name'      => $picked->name,
+                    'calories'  => (int) $picked->calories,
                 ]);
             }
         }
@@ -130,24 +148,44 @@ class PlanGenerator
     {
         Workout::where('plan_id', $plan->id)->delete();
 
+        $user = $plan->user;
+        $profile = $user?->fitnessProfile;
+
         $goal = $plan->goal_type ?? 'general';
 
-        // ✅ نحاول نجيب templates من DB
-        $templates = WorkoutTemplate::query()
+        $health = $profile?->health_condition_type;
+        $health = is_string($health) ? strtolower(trim($health)) : null;
+        if ($health === '' || $health === 'none') $health = null;
+
+        $base = WorkoutTemplate::query()
             ->where('is_active', true)
             ->where(function ($q) use ($goal) {
                 $q->whereNull('goal_type')
                   ->orWhere('goal_type', $goal)
                   ->orWhere('goal_type', 'general');
-            })
-            ->get();
+            });
 
-        // ✅ لو في templates: اختار منها
+        if ($health) {
+            $specific = (clone $base)
+                ->where('health_condition_type', $health)
+                ->get();
+
+            $templates = $specific->isNotEmpty()
+                ? $specific
+                : (clone $base)->where(function ($q) {
+                    $q->whereNull('health_condition_type')
+                      ->orWhere('health_condition_type', 'none');
+                })->get();
+        } else {
+            $templates = (clone $base)->where(function ($q) {
+                $q->whereNull('health_condition_type')
+                  ->orWhere('health_condition_type', 'none');
+            })->get();
+        }
+
         if ($templates->isNotEmpty()) {
             foreach (range(1, 7) as $day) {
-                // تمرين واحد لكل يوم (تقدري تخليه أكثر)
                 $picked = $templates->random();
-
                 Workout::create([
                     'plan_id'          => $plan->id,
                     'day'              => $day,
@@ -157,47 +195,26 @@ class PlanGenerator
                     'video_url'        => $picked->video_url,
                 ]);
             }
-
             return;
         }
 
-        // ✅ Fallback للديمو (لو مافيش templates)
-        $workouts = [
-            1 => [
-                ['Plank (Core)', 8,  'Beginner', 'https://www.youtube.com/watch?v=pSHjTRCQxIw'],
-            ],
-            2 => [
-                ['Low Impact Cardio', 15, 'Beginner', 'https://www.youtube.com/watch?v=ml6cT4AZdqI'],
-                ['Full Body Strength', 30, 'Advanced', 'https://www.youtube.com/watch?v=U0bhE67HuDY'],
-            ],
-            3 => [
-                ['Core Workout', 15, 'Intermediate', 'https://www.youtube.com/watch?v=AnYl6Nk9GOA'],
-            ],
-            4 => [
-                ['Stretching / Mobility', 10, 'Beginner', 'https://www.youtube.com/watch?v=4pKly2JojMw'],
-            ],
-            5 => [
-                ['Plank (Core)', 8, 'Beginner', 'https://www.youtube.com/watch?v=pSHjTRCQxIw'],
-            ],
-            6 => [
-                ['Plank (Core)', 8, 'Beginner', 'https://www.youtube.com/watch?v=pSHjTRCQxIw'],
-            ],
-            7 => [
-                ['Plank (Core)', 8, 'Beginner', 'https://www.youtube.com/watch?v=pSHjTRCQxIw'],
-            ],
+        // fallback demo
+        $demo = [
+            ['Plank (Core)', 8, 'Beginner', 'https://www.youtube.com/watch?v=pSHjTRCQxIw'],
+            ['Low Impact Cardio', 15, 'Beginner', 'https://www.youtube.com/watch?v=ml6cT4AZdqI'],
+            ['Stretching / Mobility', 10, 'Beginner', 'https://www.youtube.com/watch?v=4pKly2JojMw'],
         ];
 
         foreach (range(1, 7) as $day) {
-            foreach ($workouts[$day] ?? [] as [$name, $minutes, $level, $url]) {
-                Workout::create([
-                    'plan_id'          => $plan->id,
-                    'day'              => $day,
-                    'name'             => $name,
-                    'duration_minutes' => $minutes,
-                    'level'            => $level,
-                    'video_url'        => $url,
-                ]);
-            }
+            $picked = $demo[($day - 1) % count($demo)];
+            Workout::create([
+                'plan_id'          => $plan->id,
+                'day'              => $day,
+                'name'             => $picked[0],
+                'duration_minutes' => $picked[1],
+                'level'            => $picked[2],
+                'video_url'        => $picked[3],
+            ]);
         }
     }
 }

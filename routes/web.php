@@ -2,14 +2,15 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PlanController;
+use App\Http\Controllers\ProgressController;
 use Illuminate\Support\Facades\Route;
+
 use App\Http\Middleware\IsAdmin;
-use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\LogController;
 use App\Http\Controllers\Admin\MealTemplateController;
 use App\Http\Controllers\Admin\WorkoutTemplateController;
-use App\Http\Controllers\ProgressController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -36,10 +37,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/my-plan/meals', [PlanController::class, 'generateMeals'])->name('plan.generateMeals');
     Route::post('/my-plan/workouts', [PlanController::class, 'generateWorkouts'])->name('plan.generateWorkouts');
 
+    // Progress
     Route::get('/progress', [ProgressController::class, 'index'])->name('progress.index');
     Route::post('/progress', [ProgressController::class, 'store'])->name('progress.store');
     Route::delete('/progress/{entry}', [ProgressController::class, 'destroy'])->name('progress.destroy');
 });
+
 Route::middleware(['auth', IsAdmin::class])
     ->prefix('admin')
     ->name('admin.')
@@ -47,32 +50,24 @@ Route::middleware(['auth', IsAdmin::class])
 
         Route::get('/', [AdminController::class, 'index'])->name('dashboard');
 
-        // ✅ Manage Users (بدون toggle-admin)
+        // Users
         Route::get('/users', [UserManagementController::class, 'index'])->name('users.index');
         Route::patch('/users/{user}/toggle-active', [UserManagementController::class, 'toggleActive'])->name('users.toggleActive');
 
-        // ✅ Logs
+        // Logs
         Route::get('/logs', [LogController::class, 'index'])->name('logs.index');
         Route::get('/users/{user}/logs', [LogController::class, 'userLogs'])->name('logs.user');
 
-        // ✅ Admin Content Library
-        Route::resource('meal-templates', MealTemplateController::class)->except(['show'])->names('meals');
-        Route::resource('workout-templates', WorkoutTemplateController::class)->except(['show'])->names('workouts');
+        // ✅ Admin Content Library (Resource فقط + توحيد parameter = item)
+        Route::resource('meal-templates', MealTemplateController::class)
+            ->except(['show'])
+            ->names('meals')
+            ->parameters(['meal-templates' => 'item']);
 
-        Route::get('/meal-templates', [MealTemplateController::class, 'index'])->name('meals.index');
-        Route::get('/meal-templates/create', [MealTemplateController::class, 'create'])->name('meals.create');
-        Route::post('/meal-templates', [MealTemplateController::class, 'store'])->name('meals.store');
-        Route::get('/meal-templates/{item}/edit', [MealTemplateController::class, 'edit'])->name('meals.edit');
-        Route::put('/meal-templates/{item}', [MealTemplateController::class, 'update'])->name('meals.update');
-        Route::delete('/meal-templates/{item}', [MealTemplateController::class, 'destroy'])->name('meals.destroy');
-
-        Route::get('/workout-templates', [WorkoutTemplateController::class, 'index'])->name('workouts.index');
-        Route::get('/workout-templates/create', [WorkoutTemplateController::class, 'create'])->name('workouts.create');
-        Route::post('/workout-templates', [WorkoutTemplateController::class, 'store'])->name('workouts.store');
-        Route::get('/workout-templates/{item}/edit', [WorkoutTemplateController::class, 'edit'])->name('workouts.edit');
-        Route::put('/workout-templates/{item}', [WorkoutTemplateController::class, 'update'])->name('workouts.update');
-        Route::delete('/workout-templates/{item}', [WorkoutTemplateController::class, 'destroy'])->name('workouts.destroy');
+        Route::resource('workout-templates', WorkoutTemplateController::class)
+            ->except(['show'])
+            ->names('workouts')
+            ->parameters(['workout-templates' => 'item']);
     });
 
-
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

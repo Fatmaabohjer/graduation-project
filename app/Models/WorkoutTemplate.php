@@ -15,6 +15,7 @@ class WorkoutTemplate extends Model
         'duration_minutes',
         'video_url',
         'goal_type',
+        'health_condition_type',
         'is_active',
     ];
 }

@@ -26,10 +26,22 @@ class MealTemplateController extends Controller
             'name'      => ['required','string','max:255'],
             'calories'  => ['required','integer','min:0'],
             'goal_type' => ['nullable','string','max:50'],
+
+            // ✅ للفلترة
+            'dietary_condition' => ['nullable','string','max:50'],
+            'health_condition_type' => ['nullable','string','max:50'], // لو تحبي تخزنيها للوجبات (اختياري)
+
             'is_active' => ['nullable'],
         ]);
 
         $data['is_active'] = $request->boolean('is_active');
+
+        // ✅ normalize
+        $data['dietary_condition'] = isset($data['dietary_condition']) ? strtolower(trim($data['dietary_condition'])) : null;
+        if (($data['dietary_condition'] ?? null) === '' || ($data['dietary_condition'] ?? null) === 'none') $data['dietary_condition'] = null;
+
+        $data['health_condition_type'] = isset($data['health_condition_type']) ? strtolower(trim($data['health_condition_type'])) : null;
+        if (($data['health_condition_type'] ?? null) === '' || ($data['health_condition_type'] ?? null) === 'none') $data['health_condition_type'] = null;
 
         MealTemplate::create($data);
 
@@ -48,10 +60,20 @@ class MealTemplateController extends Controller
             'name'      => ['required','string','max:255'],
             'calories'  => ['required','integer','min:0'],
             'goal_type' => ['nullable','string','max:50'],
+
+            'dietary_condition' => ['nullable','string','max:50'],
+            'health_condition_type' => ['nullable','string','max:50'],
+
             'is_active' => ['nullable'],
         ]);
 
         $data['is_active'] = $request->boolean('is_active');
+
+        $data['dietary_condition'] = isset($data['dietary_condition']) ? strtolower(trim($data['dietary_condition'])) : null;
+        if (($data['dietary_condition'] ?? null) === '' || ($data['dietary_condition'] ?? null) === 'none') $data['dietary_condition'] = null;
+
+        $data['health_condition_type'] = isset($data['health_condition_type']) ? strtolower(trim($data['health_condition_type'])) : null;
+        if (($data['health_condition_type'] ?? null) === '' || ($data['health_condition_type'] ?? null) === 'none') $data['health_condition_type'] = null;
 
         $item->update($data);
 

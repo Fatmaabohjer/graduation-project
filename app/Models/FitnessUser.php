@@ -9,7 +9,6 @@ class FitnessUser extends Model
 {
     use HasFactory;
 
-    // الأعمدة اللي نسمح بالتعبئة الجماعية
     protected $fillable = [
         'user_id',
         'age',
@@ -17,10 +16,14 @@ class FitnessUser extends Model
         'height',
         'target_weight',
         'goal_type',
+
+        // ✅ للتمارين (إصابات/ألم)
         'health_condition_type',
+
+        // ✅ للوجبات (حساسية/سكري/قلوتين...)
+        'dietary_condition',
     ];
 
-    // العلاقة: FitnessUser تابع لمستخدم واحد
     public function user()
     {
         return $this->belongsTo(User::class);

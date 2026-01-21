@@ -42,6 +42,7 @@
         </div>
     </x-slot>
 
+
     <div class="py-8">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
@@ -58,6 +59,20 @@
                     {{ session('success') }}
                 </div>
             @endif
+
+            @php
+                // ✅ نجيب بيانات المستخدم من جدول fitness_users (لو موجود)
+                $fitnessUser = \App\Models\FitnessUser::where('user_id', auth()->id())->latest()->first();
+
+                // ✅ نحسب BMI: الوزن(kg) / (الطول بالمتر)^2
+                $bmi = null;
+                if ($fitnessUser && $fitnessUser->weight && $fitnessUser->height) {
+                    $heightMeters = $fitnessUser->height / 100;
+                    if ($heightMeters > 0) {
+                        $bmi = round($fitnessUser->weight / ($heightMeters * $heightMeters), 1);
+                    }
+                }
+            @endphp
 
             {{-- Plan Summary --}}
             <div class="bg-white shadow-sm rounded-xl p-6 mb-6">
@@ -85,7 +100,7 @@
                             </div>
                             <div class="px-4 py-2 rounded-lg border">
                                 <div class="text-xs text-gray-500">BMI</div>
-                                <div class="font-semibold">{{ $plan->bmi ?? '—' }}</div>
+                                <div class="font-semibold">{{ $bmi ?? '—' }}</div>
                             </div>
                         </div>
                     </div>

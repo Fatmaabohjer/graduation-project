@@ -14,6 +14,7 @@ class MealTemplate extends Model
         'name',
         'calories',
         'goal_type',
+        'health_condition_type',
         'is_active',
     ];
 }

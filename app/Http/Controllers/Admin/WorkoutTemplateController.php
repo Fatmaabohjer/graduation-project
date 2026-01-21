@@ -25,12 +25,19 @@ class WorkoutTemplateController extends Controller
             'name'             => ['required','string','max:255'],
             'level'            => ['nullable','string','max:50'],
             'duration_minutes' => ['nullable','integer','min:0'],
-            'video_url'        => ['nullable','string','max:500'], // نخليها string (مش strict url) عشان ما تتعطليش
+            'video_url'        => ['nullable','string','max:500'],
             'goal_type'        => ['nullable','string','max:50'],
+
+            // ✅ للفلترة
+            'health_condition_type' => ['nullable','string','max:50'],
+
             'is_active'        => ['nullable'],
         ]);
 
         $data['is_active'] = $request->boolean('is_active');
+
+        $data['health_condition_type'] = isset($data['health_condition_type']) ? strtolower(trim($data['health_condition_type'])) : null;
+        if (($data['health_condition_type'] ?? null) === '' || ($data['health_condition_type'] ?? null) === 'none') $data['health_condition_type'] = null;
 
         WorkoutTemplate::create($data);
 
@@ -50,10 +57,16 @@ class WorkoutTemplateController extends Controller
             'duration_minutes' => ['nullable','integer','min:0'],
             'video_url'        => ['nullable','string','max:500'],
             'goal_type'        => ['nullable','string','max:50'],
+
+            'health_condition_type' => ['nullable','string','max:50'],
+
             'is_active'        => ['nullable'],
         ]);
 
         $data['is_active'] = $request->boolean('is_active');
+
+        $data['health_condition_type'] = isset($data['health_condition_type']) ? strtolower(trim($data['health_condition_type'])) : null;
+        if (($data['health_condition_type'] ?? null) === '' || ($data['health_condition_type'] ?? null) === 'none') $data['health_condition_type'] = null;
 
         $item->update($data);
 
