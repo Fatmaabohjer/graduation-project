@@ -6,6 +6,44 @@ use Illuminate\Http\Request;
 
 class ProfileController extends Controller
 {
+    /**
+     * ✅ Breeze default profile routes point here:
+     * GET /profile -> profile.edit
+     *
+     * بما إن مشروعك يعتمد على Health Profile، نخلي /profile يوديك مباشرة لصفحة /profile/health
+     */
+    public function edit(Request $request)
+    {
+        return redirect()->route('profile.health.edit');
+    }
+
+    /**
+     * PATCH /profile -> profile.update
+     * ما نحتاجوش في مشروعك توا، لكن نخليه موجود باش ما يطيحش route.
+     * ممكن لاحقًا تخليه يعدّل name/email لو تبّي.
+     */
+    public function update(Request $request)
+    {
+        // نخليها بسيطة وما نغيروش شي
+        return redirect()->route('profile.health.edit')
+            ->with('status', 'Profile updated.');
+    }
+
+    /**
+     * DELETE /profile -> profile.destroy
+     * نفس الفكرة: نخليه موجود فقط باش ما يصيرش error.
+     */
+    public function destroy(Request $request)
+    {
+        // ما نحذفوش حساب توا (لو تبّي نفعّلها بعدين)
+        return redirect()->route('profile.health.edit')
+            ->with('status', 'Delete account is not enabled yet.');
+    }
+
+    // ===============================
+    // ✅ Health Profile (شغلك الحالي)
+    // ===============================
+
     public function editHealth(Request $request)
     {
         $user = $request->user();

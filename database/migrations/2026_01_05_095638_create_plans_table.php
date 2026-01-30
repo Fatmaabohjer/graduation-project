@@ -16,9 +16,9 @@ return new class extends Migration
 
         $table->foreignId('user_id')->constrained()->cascadeOnDelete();
 
-        $table->unsignedSmallInteger('calories_target')->nullable(); // e.g. 1800
-        $table->decimal('bmi', 4, 1)->nullable(); // e.g. 23.4
-        $table->string('goal_type')->nullable(); // Lose Weight / Gain Muscle / Maintain
+        $table->unsignedSmallInteger('calories_target')->nullable(); 
+        $table->decimal('bmi', 4, 1)->nullable(); 
+        $table->string('goal_type')->nullable(); 
 
         $table->date('start_date')->nullable();
         $table->date('end_date')->nullable();

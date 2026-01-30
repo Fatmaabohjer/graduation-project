@@ -1,3 +1,39 @@
+@import url("https://fonts.bunny.net/css?family=inter:400,500,600,700,800&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+
+
+/* ===== VitaPlan Global Theme Tokens ===== */
+:root{
+  --vp-bg: #FAFAFA;
+  --vp-surface: #FFFFFF;
+  --vp-text: #1C1C1E;
+  --vp-muted: #6B7280;
+  --vp-border: rgba(0,0,0,0.06);
+
+  --vp-primary: #1C1C1E;
+  --vp-primary-text: #FFFFFF;
+
+  --vp-accent: #F5C543;
+  --vp-accent-text: #1C1C1E;
+}
+
+/* optional: better default typography */
+html, body {
+  color: var(--vp-text);
+  background: var(--vp-bg);
+}
+
+
+/* ✅ نخلي Tailwind font-sans = Inter (ينطبق على dashboard + welcome وكل شي) */
+@layer utilities {
+  .font-sans {
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif,
+      "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  }
+}

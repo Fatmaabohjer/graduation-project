@@ -1,44 +1,73 @@
-<x-app-layout>
-    <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Logs: {{ $user->name }} ({{ $user->email }})
+@extends('layouts.admin')
+
+@section('content')
+    <div class="flex items-center justify-between gap-4 mb-6">
+        <div>
+            <h2 class="font-extrabold text-2xl text-gray-900 leading-tight">
+                Logs: {{ $user->name }} <span class="text-gray-500 font-semibold text-base">({{ $user->email }})</span>
             </h2>
-            <div class="flex gap-2">
-                <a href="{{ route('admin.users.index') }}" class="px-4 py-2 rounded-lg border">Back to Users</a>
-                <a href="{{ route('admin.logs.index') }}" class="px-4 py-2 rounded-lg border">System Logs</a>
-            </div>
+            <p class="text-sm text-gray-500 mt-1">User-specific activity history.</p>
         </div>
-    </x-slot>
 
-    <div class="py-8">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white shadow-sm rounded-xl overflow-hidden">
-                <table class="w-full text-sm">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="text-left p-3">Time</th>
-                            <th class="text-left p-3">Action</th>
-                            <th class="text-left p-3">Actor</th>
-                            <th class="text-left p-3">IP</th>
-                            <th class="text-left p-3">Description</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($logs as $log)
-                            <tr class="border-t">
-                                <td class="p-3">{{ $log->created_at }}</td>
-                                <td class="p-3 font-semibold">{{ $log->action }}</td>
-                                <td class="p-3">{{ $log->actor?->email ?? '—' }}</td>
-                                <td class="p-3">{{ $log->ip_address ?? '—' }}</td>
-                                <td class="p-3">{{ $log->description ?? '—' }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="mt-4">{{ $logs->links() }}</div>
+        <div class="flex gap-2 flex-wrap">
+            <a href="{{ route('admin.users.index') }}"
+               class="px-4 py-2 rounded-xl text-sm font-semibold border border-gray-200 bg-white hover:bg-gray-50">
+                Back to Users
+            </a>
+            <a href="{{ route('admin.logs.index') }}"
+               class="px-4 py-2 rounded-xl text-sm font-semibold border border-gray-200 bg-white hover:bg-gray-50">
+                System Logs
+            </a>
         </div>
     </div>
-</x-app-layout>
+
+    <div class="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50">
+                <tr class="text-left text-gray-600">
+                    <th class="p-4 font-semibold">Time</th>
+                    <th class="p-4 font-semibold">Action</th>
+                    <th class="p-4 font-semibold">Actor</th>
+                    <th class="p-4 font-semibold">IP</th>
+                    <th class="p-4 font-semibold">Description</th>
+                </tr>
+            </thead>
+
+            <tbody class="divide-y">
+                @forelse($logs as $log)
+                    <tr class="hover:bg-gray-50/60">
+                        <td class="p-4 text-gray-600 whitespace-nowrap">
+                            {{ $log->created_at }}
+                        </td>
+
+                        <td class="p-4 font-semibold text-gray-900 whitespace-nowrap">
+                            {{ $log->action }}
+                        </td>
+
+                        <td class="p-4 text-gray-700">
+                            {{ $log->actor?->email ?? '—' }}
+                        </td>
+
+                        <td class="p-4 text-gray-700 whitespace-nowrap">
+                            {{ $log->ip_address ?? '—' }}
+                        </td>
+
+                        <td class="p-4 text-gray-600">
+                            {{ $log->description ?? '—' }}
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="5" class="p-8 text-center text-gray-500">
+                            No logs found for this user.
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-4">
+        {{ $logs->links() }}
+    </div>
+@endsection

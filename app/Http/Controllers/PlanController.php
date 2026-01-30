@@ -14,7 +14,7 @@ class PlanController extends Controller
     {
         $user = $request->user();
 
-        // ✅ آخر Plan مع العلاقات
+        
         $plan = $user->plans()
             ->with(['meals', 'workouts'])
             ->latest()

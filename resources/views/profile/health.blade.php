@@ -146,15 +146,16 @@
 
                     <div class="mt-6 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
                         <p class="text-xs" style="color:#2B2D42B3;">
-                            بعد ما تغيّري الحالات، امشي My Plan واضغطي Generate Meals/Workouts باش يتبدلوا.
+                            
                         </p>
 
                         <button type="submit"
-                            class="inline-flex items-center justify-center px-6 py-3 rounded-xl font-semibold"
-                            style="background:#3A3A3A; color:#FFFFFF;"
-                            onmouseover="this.style.background='#2B2D42'"
-                            onmouseout="this.style.background='#3A3A3A'">
+                            class="px-6 py-3 rounded-2xl font-semibold text-gray-900 shadow-sm
+                                           transition-all duration-200 transform hover:-translate-y-1 hover:shadow-md
+                                           focus:outline-none focus:ring-2 focus:ring-offset-2"
+                                    style="background-color: var(--vp-accent);">
                             Save Profile
+
                         </button>
                     </div>
                 </form>

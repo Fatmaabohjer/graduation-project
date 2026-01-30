@@ -16,11 +16,7 @@ class FitnessUser extends Model
         'height',
         'target_weight',
         'goal_type',
-
-        // ✅ للتمارين (إصابات/ألم)
         'health_condition_type',
-
-        // ✅ للوجبات (حساسية/سكري/قلوتين...)
         'dietary_condition',
     ];
 
